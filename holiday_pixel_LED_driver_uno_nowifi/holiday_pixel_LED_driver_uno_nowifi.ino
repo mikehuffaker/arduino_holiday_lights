@@ -41,6 +41,7 @@
 #include <Adafruit_WS2801.h>
 #include <SPI.h>
 #include <LiquidCrystal.h>
+#include <EEPROM.h>
 
 // Note - Pins 3,5,10,11,12,13 used by wi-fi card, so using 
 // 4 and 6 to communicate with the LED strand and 2 for button
@@ -51,19 +52,30 @@ const int buttonApin = 2;
 const int brightnessPin = A2;
  
 // LEDMode starts at mode 1
-int LEDMode = 9;
+volatile int LEDMode = 9;
 const int LEDModeMax = 9;
+
+// EEPROM save values, setting flag to true will save LEDMode to EEPROM to
+// preserve the last Mode when powered off.  Note the EEPROM eventually wears
+// out after 100K cycles per the docs I've read, so setting this to true may
+// "in theory" eventually burn out the EEPROM at the first addres and require
+// changing the save address to another cell.
+const boolean LEDModeSave = true;
+const int LEDModeSaveAdr = 0;
 
 //  Brightness reduction factor, controlled by variable resister knob
 // int dimmingLevel = 0;
 
 // timestamp for button push timer
-unsigned long currentMillis = 0;
-unsigned long previousMillis = 0;
+volatile unsigned long btnPrevTS = 0;
+unsigned long btnDelayMSec = 250;
+
+unsigned long LCDMsgDelay = 750;
+unsigned long LCDMsgPrev = 0;
 
 unsigned long startUpMsgDelay = 7000;
 
-boolean breakLEDMode = false;
+volatile boolean breakLEDMode = false;
 
 // Using some analog pins to free up for sensor/Wi-FI
 // A0 must be free for future microphone use
@@ -74,7 +86,18 @@ Adafruit_WS2801 strip = Adafruit_WS2801(100 , dataPin, clockPin);
   
 void setup()
 {
-    pinMode(buttonApin, INPUT_PULLUP);
+    // If flag is set, then try to get last LED Mode value from EEPROM
+    if ( LEDModeSave )
+    {
+        int tmp = 0;
+        EEPROM.get( LEDModeSaveAdr, tmp );
+        if ( tmp > 0 && tmp <= LEDModeMax )
+            LEDMode = tmp;
+        else
+            LEDMode = 1;
+    }
+
+    pinMode( buttonApin, INPUT_PULLUP );
 
     strip.begin();
     // Update LED contents, to start they are all 'off'
@@ -83,26 +106,44 @@ void setup()
     // Interrupt for button push - 0 is pin 2, 1 is pin 3
     attachInterrupt( 0, buttonCheck, LOW );
     
-    lcd.begin(16, 2);
+    lcd.begin( 16, 2 );
     // Print a message to the LCD.
-    lcd.setCursor(0, 0);
-    lcd.print("Mike's");
-    lcd.setCursor(0, 1);
-    lcd.print("Holiday Lights!");
+    writeLCDMessage( true, "Mike's", "Holiday Lights!" );
+    //lcd.setCursor( 0, 0 );
+    //lcd.print( "Mike's" );
+    //lcd.setCursor( 0, 1 );
+    //lcd.print( "Holiday Lights!" );
 }
 
-void printLCD ( String line1, String line2 )
+boolean writeLCDMessage( boolean withDelay, const char* line1, const char* line2 )
 {
-  lcd.clear();
-  lcd.setCursor(0,0);
-  lcd.print(line1);
-  lcd.setCursor(0,1);
-  lcd.print(line2);
-}
+    // Delay a bit if the flag is passed in, to provide a quick transition delay
+    // before displaying a new message.  Too keep messages from disappearing 
+    // too quickly after a mode change for instance.
+    if ( withDelay )
+    {
+       delay( LCDMsgDelay );      
+    }
+
+    lcd.clear();
+    if ( strlen( line1 ) > 0 )
+    {
+        lcd.setCursor( 0, 0 );
+        lcd.print( line1 );
+    }
     
+    if ( strlen( line2 ) > 0 )
+    {
+        lcd.setCursor( 0, 1 );
+        lcd.print( line2 );
+    }
+    
+    return true;
+}
+
 // fill the dots one after the other with color
 // good for testing purposes
-void colorWipe(uint32_t c, uint8_t wait, char oddEvenAll, char beginOrEnd )
+void colorWipe( uint32_t c, uint8_t wait, char oddEvenAll, char beginOrEnd )
 {
     int i;
     
@@ -157,7 +198,7 @@ void colorWipe(uint32_t c, uint8_t wait, char oddEvenAll, char beginOrEnd )
 }
 
 // set 2 colors down the strip, alternating
-void colorSet2(uint32_t color1, uint32_t color2, int wait ) 
+void colorSet2( uint32_t color1, uint32_t color2, int wait ) 
 {
     int i;
     
@@ -180,7 +221,7 @@ void colorSet2(uint32_t color1, uint32_t color2, int wait )
 }
 
 // set 3 colors down the strip, alternating
-void colorSet3(uint32_t color1, uint32_t color2, uint32_t color3, int wait ) 
+void colorSet3( uint32_t color1, uint32_t color2, uint32_t color3, int wait ) 
 {
     int i;
     
@@ -208,7 +249,7 @@ void colorSet3(uint32_t color1, uint32_t color2, uint32_t color3, int wait )
 }
 
 // set 3 colors down the strip, alternating, 2 pixels per color
-void colorSet3_2pixel(uint32_t color1, uint32_t color2, uint32_t color3, int wait ) 
+void colorSet3_2pixel( uint32_t color1, uint32_t color2, uint32_t color3, int wait ) 
 {
     int i;
     
@@ -237,7 +278,7 @@ void colorSet3_2pixel(uint32_t color1, uint32_t color2, uint32_t color3, int wai
 
 
 // set 2 colors, strip is first color and then 2nd color "chases" up and down the strip
-void colorChase2(uint32_t color1, uint32_t color2, int wait )
+void colorChase2( uint32_t color1, uint32_t color2, int wait )
 {
     int i;
     int j;
@@ -296,7 +337,7 @@ void colorChase2(uint32_t color1, uint32_t color2, int wait )
 
 // randomly set a LED to one of 2 colors down the strip for a twinkle
 // effect
-void twinkle2(uint32_t color1, uint32_t color2, int wait, int iterations )
+void twinkle2( uint32_t color1, uint32_t color2, int wait, int iterations )
 {
     int i;
     int c;
@@ -321,7 +362,7 @@ void twinkle2(uint32_t color1, uint32_t color2, int wait, int iterations )
 
 // randomly set a LED to one of 3 colors down the strip for a twinkle
 // effect
-void twinkle3(uint32_t color1, uint32_t color2, uint32_t color3, int wait, int iterations )
+void twinkle3( uint32_t color1, uint32_t color2, uint32_t color3, int wait, int iterations )
 {
     int i;
     int c;
@@ -348,7 +389,7 @@ void twinkle3(uint32_t color1, uint32_t color2, uint32_t color3, int wait, int i
 
 /* Helper functions */
 // Create a 24 bit color value from R,G,B
-uint32_t Color(byte r, byte g, byte b)
+uint32_t Color( byte r, byte g, byte b )
 {
     uint32_t c;
     c = r;
@@ -440,10 +481,21 @@ uint32_t getRandomColor( )
 
 void buttonCheck()
 {
+  
+    // Added this delay check to make sure 1 button press that "bounced"
+    // and triggers multiple interrupts doesn't change the Mode more than
+    // once.  
+    unsigned long timestamp = millis();
+
+    if ( ( timestamp - btnPrevTS ) < btnDelayMSec )
+        return;
+    else
+        btnPrevTS = timestamp;
+
     // breakLEDMode tells the current light loop to break and also by checking 
     // for false here, it prevents the mode from skipping ahead until the 
     // current mode is finished and the next one started.
-    if ( digitalRead(buttonApin) == LOW and breakLEDMode == false )
+    if ( digitalRead( buttonApin ) == LOW and breakLEDMode == false )
     {
         LEDMode++;
         breakLEDMode = true;
@@ -451,125 +503,65 @@ void buttonCheck()
         {
             LEDMode = 1;
         }
-    }
-    
-    lcd.clear();
-    lcd.setCursor(0, 0);
-    lcd.print("New Blink MODE");
+        
+        // Save new Mode to EEPROM if flag set
+        if ( LEDModeSave )
+        {
+            EEPROM.put( LEDModeSaveAdr, LEDMode );
+        }
+        
+        lcd.clear();
+        lcd.setCursor( 0, 0 );
+        lcd.print( "New Blink MODE" );
+        
+        if ( LEDModeSave )
+        {
+            lcd.setCursor( 0, 1 );
+            lcd.print( "EEPROM Saved" );
+        }
+    }      
 }
 
 void ColorTest1()
 {
     breakLEDMode = false;
 
-    if ( millis() > startUpMsgDelay )
-    {    
-        lcd.clear();
-        lcd.setCursor(0, 0);
-        lcd.print("ColorTest1 MODE");
-    }
+    writeLCDMessage( true, "ColorTest1 MODE", "" );
 
     while ( breakLEDMode != true )
     {
-        if ( millis() > startUpMsgDelay )
-        {
-            lcd.clear();
-            lcd.setCursor(0, 0);
-            lcd.print("ColorTest1 MODE");
-            lcd.setCursor(0, 1);
-            lcd.print("***RED***");
-        }
-        colorWipe(getRealColor( "RED" ), 25, 'A', 'B' );
-        if ( millis() > startUpMsgDelay )
-        {
-            lcd.clear();
-            lcd.setCursor(0, 0);
-            lcd.print("ColorTest1 MODE");
-            lcd.setCursor(0, 1);
-            lcd.print("***ORANGE***");
-        }
-        colorWipe(getRealColor( "ORANGE" ), 25, 'A', 'B' );
-        if ( millis() > startUpMsgDelay )
-        {
-            lcd.clear();
-            lcd.setCursor(0, 0);
-            lcd.print("ColorTest1 MODE");
-            lcd.setCursor(0, 1);
-            lcd.print("***BLUE***");
-        }
-        colorWipe(getRealColor( "BLUE" ), 25, 'A', 'B' );
-        if ( millis() > startUpMsgDelay )
-        {
-            lcd.clear();
-            lcd.setCursor(0, 0);
-            lcd.print("ColorTest1 MODE");
-            lcd.setCursor(0, 1);
-            lcd.print("***GREEN***");
-        }
-        colorWipe(getRealColor( "GREEN" ), 25, 'A', 'B' );
-        if ( millis() > startUpMsgDelay )
-        {
-            lcd.clear();
-            lcd.setCursor(0, 0);
-            lcd.print("ColorTest1 MODE");
-            lcd.setCursor(0, 1);
-            lcd.print("***SEAGREEN***");
-        }
-        colorWipe(getRealColor( "SEAGREEN" ), 25, 'A', 'B' );
-        if ( millis() > startUpMsgDelay )
-        {
-            lcd.clear();
-            lcd.setCursor(0, 0);
-            lcd.print("ColorTest1 MODE");
-            lcd.setCursor(0, 1);
-            lcd.print("***YELLOW***");
-        }
-        colorWipe(getRealColor( "YELLOW" ), 25, 'A', 'B' );
-        if ( millis() > startUpMsgDelay )
-        {
-            lcd.clear();
-            lcd.setCursor(0, 0);
-            lcd.print("ColorTest1 MODE");
-            lcd.setCursor(0, 1);
-            lcd.print("***SILVER***");
-        }
-        colorWipe(getRealColor( "SILVER" ), 25, 'A', 'B' );
-        if ( millis() > startUpMsgDelay )
-        {
-            lcd.clear();
-            lcd.setCursor(0, 0);
-            lcd.print("ColorTest1 MODE");
-            lcd.setCursor(0, 1);
-            lcd.print("***CYAN***");
-        }
-        colorWipe(getRealColor( "CYAN" ), 25, 'A', 'B' );
-        if ( millis() > startUpMsgDelay )
-        {
-            lcd.clear();
-            lcd.setCursor(0, 0);
-            lcd.print("ColorTest1 MODE");
-            lcd.setCursor(0, 1);
-            lcd.print("***MAGENTA***");
-        }
-        colorWipe(getRealColor( "MAGENTA" ), 25, 'A', 'B' );
-        if ( millis() > startUpMsgDelay )
-        {
-            lcd.clear();
-            lcd.setCursor(0, 0);
-            lcd.print("ColorTest1 MODE");
-            lcd.setCursor(0, 1);
-            lcd.print("***PINK***");
-        }
-        colorWipe(getRealColor( "PINK" ), 25, 'A', 'B' );
-        if ( millis() > startUpMsgDelay )
-        {
-            lcd.clear();
-            lcd.setCursor(0, 0);
-            lcd.print("ColorTest1 MODE");
-            lcd.setCursor(0, 1);
-            lcd.print("***WHITE***");
-        }
-        colorWipe(getRealColor( "WHITE" ), 25, 'A', 'B' );
+        writeLCDMessage( false, "ColorTest1 MODE", "***RED***" );
+        colorWipe( getRealColor( "RED" ), 25, 'A', 'B' );
+
+        writeLCDMessage( false, "ColorTest1 MODE", "***ORANGE***" );
+        colorWipe( getRealColor( "ORANGE" ), 25, 'A', 'B' );
+
+        writeLCDMessage( false, "ColorTest1 MODE", "***BLUE***" );       
+        colorWipe( getRealColor( "BLUE" ), 25, 'A', 'B' );
+
+        writeLCDMessage( false, "ColorTest1 MODE", "***GREEN***" );               
+        colorWipe( getRealColor( "GREEN" ), 25, 'A', 'B' );
+        
+        writeLCDMessage( false, "ColorTest1 MODE", "***SEAGREEN***" );               
+        colorWipe( getRealColor( "SEAGREEN" ), 25, 'A', 'B' );
+
+        writeLCDMessage( false, "ColorTest1 MODE", "***YELLOW***" );               
+        colorWipe( getRealColor( "YELLOW" ), 25, 'A', 'B' );
+
+        writeLCDMessage( false, "ColorTest1 MODE", "***SILVER***" );          
+        colorWipe( getRealColor( "SILVER" ), 25, 'A', 'B' );
+
+        writeLCDMessage( false, "ColorTest1 MODE", "***CYAN***" );          
+        colorWipe( getRealColor( "CYAN" ), 25, 'A', 'B' );
+
+        writeLCDMessage( false, "ColorTest1 MODE", "***MAGENTA***" );          
+        colorWipe( getRealColor( "MAGENTA" ), 25, 'A', 'B' );
+        
+        writeLCDMessage( false, "ColorTest1 MODE", "***PINK***" );          
+        colorWipe( getRealColor( "PINK" ), 25, 'A', 'B' );
+
+        writeLCDMessage( false, "ColorTest1 MODE", "***WHITE***" );                      
+        colorWipe( getRealColor( "WHITE" ), 25, 'A', 'B' );
     }
 }
 
@@ -577,7 +569,7 @@ void RandomColor1()
 {
     breakLEDMode = false;
 
-    printLCD( "RandomColor1", "MODE" );
+    writeLCDMessage( true, "RandomColor1", "MODE" );                      
 
     while ( breakLEDMode != true )
     {
@@ -590,7 +582,7 @@ void RandomColor2()
 {
     breakLEDMode = false;
 
-    printLCD( "RandomColor2", "MODE" );
+     writeLCDMessage( true, "RandomColor2", "MODE" );  
 
     while ( breakLEDMode != true )
     {
@@ -604,7 +596,7 @@ void ChristmasProgram1()
     breakLEDMode = false;
     int x = 0;
     
-    printLCD( "Christmas1", "MODE" );
+    writeLCDMessage( true, "Christmas1", "MODE" );  
 
     while ( breakLEDMode != true )
     {
@@ -638,7 +630,7 @@ void HalloweenProgram1()
     breakLEDMode = false;
     int x = 0;
 
-    printLCD( "Halloween1", "MODE" );
+    writeLCDMessage( true, "Halloween1", "MODE" );   
 
     while ( breakLEDMode != true )
     {
@@ -679,7 +671,7 @@ void July4thProgram1()
     breakLEDMode = false;
     int x = 0;
     
-    printLCD( "July4th1", "MODE" );
+    writeLCDMessage( true, "July 4th 1", "MODE" );  
 
     while ( breakLEDMode != true )
     {
@@ -720,7 +712,7 @@ void ChanukahProgram1()
     breakLEDMode = false;
     int x = 0;
     
-    printLCD( "Chanukah1", "MODE" );
+    writeLCDMessage( true, "Chanukah1", "MODE" );                      
 
     while ( breakLEDMode != true )
     {
@@ -756,7 +748,7 @@ void ValentinesProgram1()
     breakLEDMode = false;
     int x = 0;
     
-    printLCD( "Valentines1", "MODE" );
+    writeLCDMessage( true, "Valentines1", "MODE" );
 
     while ( breakLEDMode != true )
     {
@@ -797,7 +789,7 @@ void ValentinesProgram2()
     breakLEDMode = false;
     int x = 0;
     
-    printLCD( "Valentines2", "MODE" );
+    writeLCDMessage( true, "Valentines2", "MODE" );
 
     while ( breakLEDMode != true )
     {
