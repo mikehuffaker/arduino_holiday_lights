@@ -48,7 +48,6 @@
 const int dataPin = 4;
 const int clockPin = 6;
 const int buttonApin = 2;
-
 const int brightnessPin = A2;
  
 // LEDMode starts at mode 1
@@ -130,6 +129,38 @@ boolean writeLCDMessage( boolean withDelay, const char* line1, const char* line2
     {
         lcd.setCursor( 0, 0 );
         lcd.print( line1 );
+    }
+    
+    if ( strlen( line2 ) > 0 )
+    {
+        lcd.setCursor( 0, 1 );
+        lcd.print( line2 );
+    }
+    
+    return true;
+}
+
+boolean writeLCDColorMessage( boolean withDelay, const char* mode, const char* color )
+{
+    // Delay a bit if the flag is passed in, to provide a quick transition delay
+    // before displaying a new message.  Too keep messages from disappearing 
+    // too quickly after a mode change for instance.
+    if ( withDelay )
+    {
+       delay( LCDMsgDelay );      
+    }
+
+    char line2[20];
+    memset( line2, 0, sizeof(line2) );
+    int brightnessReduction = checkBrightnessLevel() * -1;
+    
+    sprintf( line2, "*%s* : %d", color, brightnessReduction );
+   
+    lcd.clear();
+    if ( strlen( mode ) > 0 )
+    {
+        lcd.setCursor( 0, 0 );
+        lcd.print( mode );
     }
     
     if ( strlen( line2 ) > 0 )
@@ -481,7 +512,6 @@ uint32_t getRandomColor( )
 
 void buttonCheck()
 {
-  
     // Added this delay check to make sure 1 button press that "bounced"
     // and triggers multiple interrupts doesn't change the Mode more than
     // once.  
@@ -522,45 +552,45 @@ void buttonCheck()
     }      
 }
 
+// This function is to display all the available colors and will also show 
+// the brightness reduction.
 void ColorTest1()
 {
     breakLEDMode = false;
-
-    writeLCDMessage( true, "ColorTest1 MODE", "" );
-
+    
     while ( breakLEDMode != true )
     {
-        writeLCDMessage( false, "ColorTest1 MODE", "***RED***" );
+        writeLCDColorMessage( false, "ColorTest1 MODE", "RED" );
         colorWipe( getRealColor( "RED" ), 25, 'A', 'B' );
 
-        writeLCDMessage( false, "ColorTest1 MODE", "***ORANGE***" );
+        writeLCDColorMessage( false, "ColorTest1 MODE", "ORANGE" );
         colorWipe( getRealColor( "ORANGE" ), 25, 'A', 'B' );
 
-        writeLCDMessage( false, "ColorTest1 MODE", "***BLUE***" );       
+        writeLCDColorMessage( false, "ColorTest1 MODE", "BLUE" );
         colorWipe( getRealColor( "BLUE" ), 25, 'A', 'B' );
 
-        writeLCDMessage( false, "ColorTest1 MODE", "***GREEN***" );               
+        writeLCDColorMessage( false, "ColorTest1 MODE", "GREEN" );
         colorWipe( getRealColor( "GREEN" ), 25, 'A', 'B' );
         
-        writeLCDMessage( false, "ColorTest1 MODE", "***SEAGREEN***" );               
+        writeLCDColorMessage( false, "ColorTest1 MODE", "SEAGREEN" );
         colorWipe( getRealColor( "SEAGREEN" ), 25, 'A', 'B' );
 
-        writeLCDMessage( false, "ColorTest1 MODE", "***YELLOW***" );               
+        writeLCDColorMessage( false, "ColorTest1 MODE", "YELLOW" );
         colorWipe( getRealColor( "YELLOW" ), 25, 'A', 'B' );
 
-        writeLCDMessage( false, "ColorTest1 MODE", "***SILVER***" );          
+        writeLCDColorMessage( false, "ColorTest1 MODE", "SILVER" );
         colorWipe( getRealColor( "SILVER" ), 25, 'A', 'B' );
 
-        writeLCDMessage( false, "ColorTest1 MODE", "***CYAN***" );          
+        writeLCDColorMessage( false, "ColorTest1 MODE", "CYAN" );
         colorWipe( getRealColor( "CYAN" ), 25, 'A', 'B' );
 
-        writeLCDMessage( false, "ColorTest1 MODE", "***MAGENTA***" );          
+        writeLCDColorMessage( false, "ColorTest1 MODE", "MAGENTA" );
         colorWipe( getRealColor( "MAGENTA" ), 25, 'A', 'B' );
-        
-        writeLCDMessage( false, "ColorTest1 MODE", "***PINK***" );          
+      
+        writeLCDColorMessage( false, "ColorTest1 MODE", "PINK" );       
         colorWipe( getRealColor( "PINK" ), 25, 'A', 'B' );
 
-        writeLCDMessage( false, "ColorTest1 MODE", "***WHITE***" );                      
+        writeLCDColorMessage( false, "ColorTest1 MODE", "WHITE" );       
         colorWipe( getRealColor( "WHITE" ), 25, 'A', 'B' );
     }
 }
@@ -622,6 +652,12 @@ void ChristmasProgram1()
         colorChase2(getRealColor("BLUE"), getRealColor("RED"), 20 );
         
         twinkle3(getRealColor("RED"), getRealColor("BLUE"), getRealColor("GREEN"), 50, 400 );
+        
+        //unsigned long testvalue = millis() % 500;
+        //String temp = String(testvalue);
+        //writeLCDMessage( false, "Delay", temp.c_str() );  
+
+        //delay( testvalue );
     }
 }
 
