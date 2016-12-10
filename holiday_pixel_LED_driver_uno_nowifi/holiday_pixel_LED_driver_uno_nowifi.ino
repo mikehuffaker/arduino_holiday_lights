@@ -52,7 +52,7 @@ const int brightnessPin = A2;
  
 // LEDMode starts at mode 1
 volatile int LEDMode = 9;
-const int LEDModeMax = 9;
+const int LEDModeMax = 10;
 
 // EEPROM save values, setting flag to true will save LEDMode to EEPROM to
 // preserve the last Mode when powered off.  Note the EEPROM eventually wears
@@ -620,38 +620,49 @@ void RandomColor2()
     }
 }
 
-// Run multiple MODES for christmas
-void ChristmasProgram1()
+void ChristmasRGBMode()
+{
+    ThreeColorProgram( "ChristmasRGB", "RED", "GREEN", "BLUE" );  
+}
+
+void ChristmasMGYMode()
+{
+    ThreeColorProgram( "ChristmasMGY", "MAGENTA", "GREEN", "YELLOW" );  
+}
+
+// generic 3 color program - runs for colors passed in
+// to-do, add control flags to enable/disable certain patterns
+void ThreeColorProgram( const char* mode, const char* color1, const char* color2, const char* color3 )
 {
     breakLEDMode = false;
     int x = 0;
     
-    writeLCDMessage( true, "Christmas1", "MODE" );  
+    writeLCDMessage( true, mode, "MODE" );  
 
     while ( breakLEDMode != true )
     {
         for ( x = 0; x < 2 && breakLEDMode != true; x++ )
         {       
-            colorWipe(getRealColor( "RED"), 15, 'A', 'B' );
-            colorWipe(getRealColor( "GREEN"), 15, 'A', 'E' );
-            colorWipe(getRealColor( "BLUE"), 15, 'A', 'B' );
-            colorWipe(getRealColor( "RED"), 15, 'A', 'E' );
-            colorWipe(getRealColor( "GREEN"), 15, 'A', 'B' );
-            colorWipe(getRealColor( "BLUE"), 15, 'A', 'E' );
+            colorWipe(getRealColor( color1 ), 15, 'A', 'B' );
+            colorWipe(getRealColor( color2 ), 15, 'A', 'E' );
+            colorWipe(getRealColor( color3 ), 15, 'A', 'B' );
+            colorWipe(getRealColor( color1 ), 15, 'A', 'E' );
+            colorWipe(getRealColor( color2 ), 15, 'A', 'B' );
+            colorWipe(getRealColor( color3 ), 15, 'A', 'E' );
         }
         
         for ( x = 0; x < 8 && breakLEDMode != true; x++ )
         { 
-            colorSet3(getRealColor("RED"), getRealColor("BLUE"), getRealColor("GREEN"), 1000); // red fill
-            colorSet3(getRealColor("BLUE"), getRealColor("GREEN"), getRealColor("RED"), 1000); // red fill
-            colorSet3(getRealColor("GREEN"), getRealColor("RED"), getRealColor("BLUE"), 1000); // red fill
+            colorSet3(getRealColor( color1 ), getRealColor( color3 ), getRealColor( color2 ), 1000);
+            colorSet3(getRealColor( color3 ), getRealColor( color2 ), getRealColor( color1 ), 1000);
+            colorSet3(getRealColor( color2 ), getRealColor( color1 ), getRealColor( color3 ), 1000);
         }
    
-        colorChase2(getRealColor("RED"), getRealColor("GREEN"), 20 );
-        colorChase2(getRealColor("GREEN"), getRealColor("RED"), 20 );
-        colorChase2(getRealColor("BLUE"), getRealColor("RED"), 20 );
+        colorChase2(getRealColor( color1 ), getRealColor( color2 ), 20 );
+        colorChase2(getRealColor( color2 ), getRealColor( color1 ), 20 );
+        colorChase2(getRealColor( color3 ), getRealColor( color1 ), 20 );
         
-        twinkle3(getRealColor("RED"), getRealColor("BLUE"), getRealColor("GREEN"), 50, 400 );
+        twinkle3(getRealColor( color1 ), getRealColor( color3 ), getRealColor( color2 ), 50, 400 );
         
         //unsigned long testvalue = millis() % 500;
         //String temp = String(testvalue);
@@ -895,13 +906,17 @@ void loop ()
     }
     else if ( LEDMode == 7 )
     {
-        ChristmasProgram1();
+        ChristmasRGBMode();
     }
     else if ( LEDMode == 8 )
     {
-        ValentinesProgram1();
+        ChristmasMGYMode();
     }
     else if ( LEDMode == 9 )
+    {
+        ValentinesProgram1();
+    }
+    else if ( LEDMode == 10 )
     {
         ValentinesProgram2();
     }
