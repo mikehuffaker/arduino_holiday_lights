@@ -417,6 +417,80 @@ void twinkle3( uint32_t color1, uint32_t color2, uint32_t color3, int wait, int 
         }
     }   
  }
+ 
+ // colors go down the strand in one direction and then reverse.
+void swirl3( uint32_t color1, uint32_t color2, uint32_t color3, int rotations, int wait_min, int wait_max, int wait_interval ) 
+{
+    // Determine about what 1/3 of the pixels in the strip is.
+    int one_third_factor = strip.numPixels() / 3;
+    int remainder = strip.numPixels() % 3;
+    
+    int color1_pos = 0;
+    int color2_pos = one_third_factor;
+    int color3_pos = one_third_factor * 2;
+    
+    // Driver loop, start with max delay and go faster until min delay is reached
+    for ( int i = wait_max; i >= wait_min && !breakLEDMode; i -= wait_interval )
+    {
+        for ( int r = 0; r < rotations * strip.numPixels(); r++ )
+        {
+            // start tracks pixel position, pixels tracks num of pixels set
+            int start = 0;
+            int pixels = 0;
+            
+            for ( start = color1_pos, pixels = 0; pixels <= one_third_factor; start++, pixels++ )
+            {
+                if ( start < strip.numPixels() )
+                    strip.setPixelColor( start, color1 );
+                else 
+                    strip.setPixelColor( start - strip.numPixels(), color1 );
+            }
+        
+            for ( start = color2_pos, pixels = 0; pixels <= one_third_factor; start++, pixels++ )
+            {
+                if ( start < strip.numPixels() )
+                    strip.setPixelColor( start, color2 );
+                else 
+                    strip.setPixelColor( start - strip.numPixels(), color2 );
+            }
+        
+            for ( start = color3_pos, pixels = 0; pixels <= one_third_factor; start++, pixels++ )
+            {
+                if ( start < strip.numPixels() )
+                    strip.setPixelColor( start, color3 );
+                else 
+                    strip.setPixelColor( start - strip.numPixels(), color3 );
+            }
+            
+            // add last few pixels if there was a remainder, for now just tack them on the 3rd color,
+            // later on, maybe add more intelligent logic here.
+            if ( remainder > 0  )
+            {
+                for ( int x = 0; x < remainder; x++ )
+                {
+                    if ( start < strip.numPixels() )
+                        strip.setPixelColor( start, color3 );
+                    else
+                        strip.setPixelColor( start - strip.numPixels(), color3 );
+                }
+            }
+        
+            if ( !breakLEDMode )
+            {
+                // Delay per parms passed in
+                strip.show();
+                delay( i );
+                // Advance the colors down the strip - since index starts at 0, actually
+                // need to roll back to 0 if the position is 1 less than the LED count
+   
+                color1_pos > strip.numPixels() - 1 ? color1_pos = 0 : color1_pos++;
+                color2_pos > strip.numPixels() - 1 ? color2_pos = 0 : color2_pos++;
+                color3_pos > strip.numPixels() - 1 ? color3_pos = 0 : color3_pos++;
+         
+            }
+        }  // Rotations loop    
+    }  // Time delay loop    
+}
 
 /* Helper functions */
 // Create a 24 bit color value from R,G,B
@@ -696,6 +770,7 @@ void ThreeColorProgram( const char* mode, const char* color1, const char* color2
         }
 
         // Add "swirl" function, with speed varying, then reverse direction
+        swirl3( getRealColor( color1 ), getRealColor( color2 ), getRealColor( color3 ), 2, 2, 20, 2 );
         
         //unsigned long testvalue = millis() % 500;
         //String temp = String(testvalue);
