@@ -52,7 +52,7 @@ const int brightnessPin = A2;
  
 // LEDMode starts at mode 1
 volatile int LEDMode = 9;
-const int LEDModeMax = 10;
+const int LEDModeMax = 11;
 
 // EEPROM save values, setting flag to true will save LEDMode to EEPROM to
 // preserve the last Mode when powered off.  Note the EEPROM eventually wears
@@ -623,6 +623,36 @@ void RandomColor2()
     }
 }
 
+void TwoColorProgram( const char* mode, const char* color1, const char* color2 )
+{
+    breakLEDMode = false;
+    int x = 0;
+    
+    writeLCDMessage( true, mode, "MODE" ); 
+
+    while ( breakLEDMode != true )
+    {
+        for ( x = 0; x < 2 && breakLEDMode != true; x++ )
+        {       
+            colorWipe(getRealColor( color1 ), 15, 'A', 'B' );
+            colorWipe(getRealColor( color2 ), 15, 'A', 'E' );
+            colorWipe(getRealColor( color1 ), 15, 'A', 'B' );
+            colorWipe(getRealColor( color2 ), 15, 'A', 'E' );
+        }
+        
+        for ( x = 0; x < 4 && breakLEDMode != true; x++ )
+        { 
+            colorSet2(getRealColor( color1 ), getRealColor( color2 ), 1000);
+            colorSet2(getRealColor( color2 ), getRealColor( color1 ), 1000);
+        }
+        
+        colorChase2(getRealColor( color1 ), getRealColor( color2 ), 20 );
+        colorChase2(getRealColor( color2 ), getRealColor( color1 ), 20 );
+        
+        twinkle2(getRealColor( color1 ), getRealColor( color2 ), 50, 400 );
+    }
+}
+
 // generic 3 color program - runs for colors passed in
 // to-do, add control flags to enable/disable certain patterns
 void ThreeColorProgram( const char* mode, const char* color1, const char* color2, const char* color3 )
@@ -675,6 +705,8 @@ void ThreeColorProgram( const char* mode, const char* color1, const char* color2
     }
 }
 
+// TODO: 4, 5, 6 color programs, etc.
+
 // Holiday Mode functions start here
 void ChristmasRGBMode()
 {
@@ -696,40 +728,9 @@ void July4thRWBMode()
     ThreeColorProgram( "July 4th RWB", "RED", "WHITE", "BLUE" ); 
 }
 
-void ChanukahProgram1()
+void ChanukahMode()
 {
-    breakLEDMode = false;
-    int x = 0;
-    
-    writeLCDMessage( true, "Chanukah1", "MODE" );                      
-
-    while ( breakLEDMode != true )
-    {
-        for ( x = 0; x < 2 && breakLEDMode != true; x++ )
-        {       
-            colorWipe(getRealColor( "BLUE"), 15, 'A', 'B' );
-            colorWipe(getRealColor( "SILVER"), 15, 'A', 'E' );
-            colorWipe(getRealColor( "BLUE"), 15, 'A', 'B' );
-            colorWipe(getRealColor( "SILVER"), 15, 'A', 'E' );
-        }
-        
-        for ( x = 0; x < 4 && breakLEDMode != true; x++ )
-        { 
-            colorSet2(getRealColor("BLUE"), getRealColor("SILVER"), 1000);
-            colorSet2(getRealColor("SILVER"), getRealColor("BLUE"), 1000);
-        }
-        
-        for ( x = 0; x < 4 && breakLEDMode != true; x++ )
-        {
-            colorSet2(getRealColor("SILVER"), getRealColor("BLUE"), 1000);
-            colorSet2(getRealColor("BLUE"), getRealColor("SILVER"), 1000);
-        }
-   
-        colorChase2(getRealColor("BLUE"), getRealColor("SILVER"), 20 );
-        colorChase2(getRealColor("SILVER"), getRealColor("BLUE"), 20 );
-        
-        twinkle2(getRealColor("BLUE"), getRealColor("SILVER"), 50, 400 );
-    }
+    TwoColorProgram( "Chanukah", "BLUE", "SILVER" ); 
 }
 
 void ValentinesRPWMode()
@@ -740,6 +741,11 @@ void ValentinesRPWMode()
 void ValentinesRMWMode()
 {
     ThreeColorProgram( "Valentines RMW", "RED", "MAGENTA", "WHITE" ); 
+}
+
+void StPatricksMode()
+{
+    TwoColorProgram( "Saint Patricks", "GREEN", "WHITE" ); 
 }
 
 void loop ()
@@ -771,7 +777,7 @@ void loop ()
     }
     else if ( LEDMode == 6 )
     {
-        ChanukahProgram1();
+        ChanukahMode();
     }
     else if ( LEDMode == 7 )
     {
@@ -788,6 +794,10 @@ void loop ()
     else if ( LEDMode == 10 )
     {
         ValentinesRMWMode();
+    }
+    else if ( LEDMode == 11 )
+    {
+        StPatricksMode();
     }
 
 }
