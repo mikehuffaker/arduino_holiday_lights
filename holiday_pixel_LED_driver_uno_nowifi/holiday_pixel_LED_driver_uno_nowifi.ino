@@ -430,10 +430,13 @@ uint32_t Color( byte r, byte g, byte b )
     c |= b; 
     return c;
 }
- 
+
+// This uses a string for now, at some point I might change it to an color ENUM
+// with maybe short ints for each color value, to save a bit of memory.  I could
+// also potentially create an array of a struct with each struct holding a value
+// to define the color, plus 3 values to hold the RGB values.  
 uint32_t getRealColor( String colorName )
 {
-  
     // When the color is set, read the analog port to check the variable resistor 
     // and see if the brightness was turned down.
     
@@ -620,16 +623,6 @@ void RandomColor2()
     }
 }
 
-void ChristmasRGBMode()
-{
-    ThreeColorProgram( "ChristmasRGB", "RED", "GREEN", "BLUE" );  
-}
-
-void ChristmasMGYMode()
-{
-    ThreeColorProgram( "ChristmasMGY", "MAGENTA", "GREEN", "YELLOW" );  
-}
-
 // generic 3 color program - runs for colors passed in
 // to-do, add control flags to enable/disable certain patterns
 void ThreeColorProgram( const char* mode, const char* color1, const char* color2, const char* color3 )
@@ -663,6 +656,16 @@ void ThreeColorProgram( const char* mode, const char* color1, const char* color2
         colorChase2(getRealColor( color3 ), getRealColor( color1 ), 20 );
         
         twinkle3(getRealColor( color1 ), getRealColor( color3 ), getRealColor( color2 ), 50, 400 );
+
+        // Testing to see if this looks good        
+        for ( x = 0; x < 8 && breakLEDMode != true; x++ )
+        { 
+            colorSet3_2pixel(getRealColor( color1 ), getRealColor( color3 ), getRealColor( color2 ), 1000);
+            colorSet3_2pixel(getRealColor( color3 ), getRealColor( color2 ), getRealColor( color1 ), 1000);
+            colorSet3_2pixel(getRealColor( color2 ), getRealColor( color1 ), getRealColor( color3 ), 1000);
+        }
+
+        // Add "swirl" function, with speed varying, then reverse direction
         
         //unsigned long testvalue = millis() % 500;
         //String temp = String(testvalue);
@@ -672,86 +675,25 @@ void ThreeColorProgram( const char* mode, const char* color1, const char* color2
     }
 }
 
-void HalloweenProgram1()
+// Holiday Mode functions start here
+void ChristmasRGBMode()
 {
-    breakLEDMode = false;
-    int x = 0;
-
-    writeLCDMessage( true, "Halloween1", "MODE" );   
-
-    while ( breakLEDMode != true )
-    {
-        for ( x = 0; x < 2 && breakLEDMode != true; x++ )
-        {       
-            colorWipe(getRealColor( "ORANGE"), 15, 'A', 'B' );
-            colorWipe(getRealColor( "WHITE"), 15, 'A', 'E' );
-            colorWipe(getRealColor( "RED"), 15, 'A', 'B' );
-            colorWipe(getRealColor( "ORANGE"), 15, 'A', 'E' );
-            colorWipe(getRealColor( "WHITE"), 15, 'A', 'B' );
-            colorWipe(getRealColor( "RED"), 15, 'A', 'E' );
-        }
-        
-        for ( x = 0; x < 4 && breakLEDMode != true; x++ )
-        { 
-            colorSet3(getRealColor("ORANGE"), getRealColor("WHITE"), getRealColor("RED"), 1000); // red fill
-            colorSet3(getRealColor("WHITE"), getRealColor("RED"), getRealColor("ORANGE"), 1000); // red fill
-            colorSet3(getRealColor("RED"), getRealColor("ORANGE"), getRealColor("WHITE"), 1000); // red fill
-        }
-
-        for ( x = 0; x < 4 && breakLEDMode != true; x++ )
-        { 
-            colorSet3(getRealColor("ORANGE"), getRealColor("WHITE"), getRealColor("RED"), 500); // red fill
-            colorSet3(getRealColor("WHITE"), getRealColor("RED"), getRealColor("ORANGE"), 500); // red fill
-            colorSet3(getRealColor("RED"), getRealColor("ORANGE"), getRealColor("WHITE"), 500); // red fill
-        }
-   
-        colorChase2(getRealColor("ORANGE"), getRealColor("WHITE"), 20 );
-        colorChase2(getRealColor("WHITE"), getRealColor("RED"), 20 );
-        colorChase2(getRealColor("RED"), getRealColor("ORANGE"), 20 );
-        
-        twinkle3(getRealColor("ORANGE"), getRealColor("WHITE"), getRealColor("RED"), 50, 400 );
-    }
+    ThreeColorProgram( "Christmas RGB", "RED", "GREEN", "BLUE" );  
 }
 
-void July4thProgram1()
+void ChristmasMGYMode()
 {
-    breakLEDMode = false;
-    int x = 0;
-    
-    writeLCDMessage( true, "July 4th 1", "MODE" );  
+    ThreeColorProgram( "Christmas MGY", "MAGENTA", "GREEN", "YELLOW" );  
+}
 
-    while ( breakLEDMode != true )
-    {
-        for ( x = 0; x < 2 && breakLEDMode != true; x++ )
-        {       
-            colorWipe(getRealColor( "RED"), 15, 'A', 'B' );
-            colorWipe(getRealColor( "WHITE"), 15, 'A', 'E' );
-            colorWipe(getRealColor( "BLUE"), 15, 'A', 'B' );
-            colorWipe(getRealColor( "RED"), 15, 'A', 'E' );
-            colorWipe(getRealColor( "WHITE"), 15, 'A', 'B' );
-            colorWipe(getRealColor( "BLUE"), 15, 'A', 'E' );
-        }
-        
-        for ( x = 0; x < 4 && breakLEDMode != true; x++ )
-        { 
-            colorSet3(getRealColor("RED"), getRealColor("WHITE"), getRealColor("BLUE"), 1000); // red fill
-            colorSet3(getRealColor("BLUE"), getRealColor("RED"), getRealColor("WHITE"), 1000); // red fill
-            colorSet3(getRealColor("WHITE"), getRealColor("BLUE"), getRealColor("RED"), 1000); // red fill
-        }
-        
-        for ( x = 0; x < 4 && breakLEDMode != true; x++ )
-        {
-            colorSet3(getRealColor("RED"), getRealColor("WHITE"), getRealColor("BLUE"), 500 ); // red fill
-            colorSet3(getRealColor("BLUE"), getRealColor("RED"), getRealColor("WHITE"), 500); // red fill
-            colorSet3(getRealColor("WHITE"), getRealColor("BLUE"), getRealColor("RED"), 500); // red fill
-        }
-   
-        colorChase2(getRealColor("RED"), getRealColor("WHITE"), 20 );
-        colorChase2(getRealColor("WHITE"), getRealColor("BLUE"), 20 );
-        colorChase2(getRealColor("BLUE"), getRealColor("RED"), 20 );
-        
-        twinkle3(getRealColor("RED"), getRealColor("WHITE"), getRealColor("BLUE"), 50, 400 );
-    }
+void HalloweenOWRMode()
+{
+    ThreeColorProgram( "Halloween OWR", "ORANGE", "WHITE", "RED" );  
+}  
+
+void July4thRWBMode()
+{
+    ThreeColorProgram( "July 4th RWB", "RED", "WHITE", "BLUE" ); 
 }
 
 void ChanukahProgram1()
@@ -790,87 +732,14 @@ void ChanukahProgram1()
     }
 }
 
-void ValentinesProgram1()
+void ValentinesRPWMode()
 {
-    breakLEDMode = false;
-    int x = 0;
-    
-    writeLCDMessage( true, "Valentines1", "MODE" );
-
-    while ( breakLEDMode != true )
-    {
-        for ( x = 0; x < 2 && breakLEDMode != true; x++ )
-        {       
-            colorWipe(getRealColor( "RED"), 15, 'A', 'B' );
-            colorWipe(getRealColor( "PINK"), 15, 'A', 'E' );
-            colorWipe(getRealColor( "WHITE"), 15, 'A', 'B' );
-            colorWipe(getRealColor( "RED"), 15, 'A', 'E' );
-            colorWipe(getRealColor( "WHITE"), 15, 'A', 'B' );
-            colorWipe(getRealColor( "PINK"), 15, 'A', 'E' );
-        }
-        
-        for ( x = 0; x < 8 && breakLEDMode != true; x++ )
-        { 
-            colorSet3(getRealColor("RED"), getRealColor("PINK"), getRealColor("WHITE"), 1000); // red fill
-            colorSet3(getRealColor("PINK"), getRealColor("RED"), getRealColor("WHITE"), 1000); // red fill
-            colorSet3(getRealColor("WHITE"), getRealColor("RED"), getRealColor("PINK"), 1000); // red fill
-        }
-   
-        colorChase2(getRealColor("RED"), getRealColor("WHITE"), 20 );
-        colorChase2(getRealColor("PINK"), getRealColor("WHITE"), 20 );
-        colorChase2(getRealColor("PINK"), getRealColor("RED"), 20 );
-        
-        twinkle3(getRealColor("RED"), getRealColor("PINK"), getRealColor("WHITE"), 50, 400 );
-        
-        for ( x = 0; x < 8 && breakLEDMode != true; x++ )
-        { 
-            colorSet3_2pixel(getRealColor("RED"), getRealColor("MAGENTA"), getRealColor("WHITE"), 1000); // red fill
-            colorSet3_2pixel(getRealColor("MAGENTA"), getRealColor("RED"), getRealColor("WHITE"), 1000); // red fill
-            colorSet3_2pixel(getRealColor("WHITE"), getRealColor("RED"), getRealColor("MAGENTA"), 1000); // red fill
-        }
-    }
+    ThreeColorProgram( "Valentines RPW", "RED", "PINK", "WHITE" ); 
 }
 
-void ValentinesProgram2()
+void ValentinesRMWMode()
 {
-    breakLEDMode = false;
-    int x = 0;
-    
-    writeLCDMessage( true, "Valentines2", "MODE" );
-
-    while ( breakLEDMode != true )
-    {
-        for ( x = 0; x < 2 && breakLEDMode != true; x++ )
-        {       
-            colorWipe(getRealColor( "RED"), 15, 'A', 'B' );
-            colorWipe(getRealColor( "MAGENTA"), 15, 'A', 'E' );
-            colorWipe(getRealColor( "WHITE"), 15, 'A', 'B' );
-            colorWipe(getRealColor( "RED"), 15, 'A', 'E' );
-            colorWipe(getRealColor( "WHITE"), 15, 'A', 'B' );
-            colorWipe(getRealColor( "MAGENTA"), 15, 'A', 'E' );
-        }
-        
-        for ( x = 0; x < 8 && breakLEDMode != true; x++ )
-        { 
-            colorSet3(getRealColor("RED"), getRealColor("MAGENTA"), getRealColor("WHITE"), 1000); // red fill
-            colorSet3(getRealColor("MAGENTA"), getRealColor("RED"), getRealColor("WHITE"), 1000); // red fill
-            colorSet3(getRealColor("WHITE"), getRealColor("RED"), getRealColor("MAGENTA"), 1000); // red fill
-        }
-   
-        colorChase2(getRealColor("RED"), getRealColor("WHITE"), 20 );
-        colorChase2(getRealColor("MAGENTA"), getRealColor("WHITE"), 20 );
-        colorChase2(getRealColor("RED"), getRealColor("MAGENTA"), 20 );
-        
-        twinkle3(getRealColor("RED"), getRealColor("MAGENTA"), getRealColor("WHITE"), 50, 400 );
-        
-        for ( x = 0; x < 8 && breakLEDMode != true; x++ )
-        { 
-            colorSet3_2pixel(getRealColor("RED"), getRealColor("MAGENTA"), getRealColor("WHITE"), 1000); // red fill
-            colorSet3_2pixel(getRealColor("MAGENTA"), getRealColor("RED"), getRealColor("WHITE"), 1000); // red fill
-            colorSet3_2pixel(getRealColor("WHITE"), getRealColor("RED"), getRealColor("MAGENTA"), 1000); // red fill
-        }
-
-    }
+    ThreeColorProgram( "Valentines RMW", "RED", "MAGENTA", "WHITE" ); 
 }
 
 void loop ()
@@ -894,11 +763,11 @@ void loop ()
     }
     else if ( LEDMode == 4 )
     {
-        July4thProgram1();
+        July4thRWBMode();
     }
     else if ( LEDMode == 5 )
     {
-        HalloweenProgram1();
+        HalloweenOWRMode();
     }
     else if ( LEDMode == 6 )
     {
@@ -914,11 +783,11 @@ void loop ()
     }
     else if ( LEDMode == 9 )
     {
-        ValentinesProgram1();
+        ValentinesRPWMode();
     }
     else if ( LEDMode == 10 )
     {
-        ValentinesProgram2();
+        ValentinesRMWMode();
     }
 
 }
