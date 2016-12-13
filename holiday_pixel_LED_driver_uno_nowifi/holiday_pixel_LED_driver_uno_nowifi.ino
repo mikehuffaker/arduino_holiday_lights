@@ -52,7 +52,7 @@ const int brightnessPin = A2;
  
 // LEDMode starts at mode 1
 volatile int LEDMode = 9;
-const int LEDModeMax = 11;
+const int LEDModeMax = 12;
 
 // EEPROM save values, setting flag to true will save LEDMode to EEPROM to
 // preserve the last Mode when powered off.  Note the EEPROM eventually wears
@@ -449,6 +449,71 @@ void twinkle3( uint32_t color1, uint32_t color2, uint32_t color3, unsigned int w
  
  // colors go down the strand in one direction and then reverse. Note delay is in
  // micro seconds, NOT milliseconds, so pass in wait_min, wait_max, interval to match.
+void swirl2( uint32_t color1, uint32_t color2, unsigned int rotations, unsigned int wait_min, unsigned int wait_max, unsigned int wait_interval ) 
+{
+    // Determine about what 1/3 of the pixels in the strip is.
+    int one_half_factor = strip.numPixels() / 2;
+    int remainder = strip.numPixels() % 2;
+    
+    int color1_pos = 0;
+    int color2_pos = one_half_factor;
+    
+    // Driver loop, start with max delay and go faster until min delay is reached
+    for ( int i = wait_max; i >= wait_min && !breakLEDMode; i -= wait_interval )
+    {
+        for ( int r = 0; r < rotations * strip.numPixels(); r++ )
+        {
+            // start tracks pixel position, pixels tracks num of pixels set
+            int start = 0;
+            int pixels = 0;
+            
+            for ( start = color1_pos, pixels = 0; pixels <= one_half_factor; start++, pixels++ )
+            {
+                if ( start < strip.numPixels() )
+                    strip.setPixelColor( start, color1 );
+                else 
+                    strip.setPixelColor( start - strip.numPixels(), color1 );
+            }
+        
+            for ( start = color2_pos, pixels = 0; pixels <= one_half_factor; start++, pixels++ )
+            {
+                if ( start < strip.numPixels() )
+                    strip.setPixelColor( start, color2 );
+                else 
+                    strip.setPixelColor( start - strip.numPixels(), color2 );
+            }
+        
+            // add last few pixels if there was a remainder, for now just tack them on the 3rd color,
+            // later on, maybe add more intelligent logic here.
+            if ( remainder > 0  )
+            {
+                for ( int x = 0; x < remainder; x++ )
+                {
+                    if ( start < strip.numPixels() )
+                        strip.setPixelColor( start, color2 );
+                    else
+                        strip.setPixelColor( start - strip.numPixels(), color2 );
+                }
+            }
+        
+            if ( !breakLEDMode )
+            {
+                // Delay per parms passed in
+                strip.show();
+                delay( 0, i );
+                // Advance the colors down the strip - since index starts at 0, actually
+                // need to roll back to 0 if the position is 1 less than the LED count
+   
+                color1_pos > strip.numPixels() - 1 ? color1_pos = 0 : color1_pos++;
+                color2_pos > strip.numPixels() - 1 ? color2_pos = 0 : color2_pos++;
+            }
+        }  // Rotations loop    
+    }  // Time delay loop    
+}
+
+ 
+ // colors go down the strand in one direction and then reverse. Note delay is in
+ // micro seconds, NOT milliseconds, so pass in wait_min, wait_max, interval to match.
 void swirl3( uint32_t color1, uint32_t color2, uint32_t color3, unsigned int rotations, unsigned int wait_min, unsigned int wait_max, unsigned int wait_interval ) 
 {
     // Determine about what 1/3 of the pixels in the strip is.
@@ -516,7 +581,6 @@ void swirl3( uint32_t color1, uint32_t color2, uint32_t color3, unsigned int rot
                 color1_pos > strip.numPixels() - 1 ? color1_pos = 0 : color1_pos++;
                 color2_pos > strip.numPixels() - 1 ? color2_pos = 0 : color2_pos++;
                 color3_pos > strip.numPixels() - 1 ? color3_pos = 0 : color3_pos++;
-         
             }
         }  // Rotations loop    
     }  // Time delay loop    
@@ -833,7 +897,7 @@ void July4thRWBMode()
     ThreeColorProgram( "July 4th RWB", "RED", "WHITE", "BLUE" ); 
 }
 
-void ChanukahMode()
+void ChanukahBSMode()
 {
     TwoColorProgram( "Chanukah", "BLUE", "SILVER" ); 
 }
@@ -848,6 +912,13 @@ void ValentinesRMWMode()
     ThreeColorProgram( "Valentines RMW", "RED", "MAGENTA", "WHITE" ); 
 }
 
+// This can also be interesting for a Christmas theme
+void ValentinesRWMode()
+{
+    TwoColorProgram( "Valentines RW", "RED", "WHITE" ); 
+}
+
+// This can also be interesting for a Christmas theme
 void StPatricksMode()
 {
     TwoColorProgram( "Saint Patricks", "GREEN", "WHITE" ); 
@@ -882,7 +953,7 @@ void loop ()
     }
     else if ( LEDMode == 6 )
     {
-        ChanukahMode();
+        ChanukahBSMode();
     }
     else if ( LEDMode == 7 )
     {
@@ -902,8 +973,11 @@ void loop ()
     }
     else if ( LEDMode == 11 )
     {
+        ValentinesRWMode();
+    }
+    else if ( LEDMode == 12 )
+    {
         StPatricksMode();
     }
-
 }
 
