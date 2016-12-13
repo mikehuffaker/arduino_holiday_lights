@@ -817,7 +817,9 @@ void TwoColorProgram( const char* mode, const char* color1, const char* color2 )
         colorChase2(getRealColor( color1 ), getRealColor( color2 ), 20 );
         colorChase2(getRealColor( color2 ), getRealColor( color1 ), 20 );
         
-        twinkle2(getRealColor( color1 ), getRealColor( color2 ), 50, 400 );
+        twinkle2(getRealColor( color1 ), getRealColor( color2 ), 50, 300 );
+        
+        swirl2( getRealColor( color1 ), getRealColor( color2 ), 1, 500, 10000, 500 );    
     }
 }
 
@@ -853,7 +855,7 @@ void ThreeColorProgram( const char* mode, const char* color1, const char* color2
         colorChase2(getRealColor( color2 ), getRealColor( color1 ), 20 );
         colorChase2(getRealColor( color3 ), getRealColor( color1 ), 20 );
         
-        twinkle3(getRealColor( color1 ), getRealColor( color3 ), getRealColor( color2 ), 50, 400 );
+        twinkle3(getRealColor( color1 ), getRealColor( color3 ), getRealColor( color2 ), 50, 300 );
 
         // Testing to see if this looks good        
         for ( x = 0; x < 8 && breakLEDMode != true; x++ )
@@ -864,7 +866,7 @@ void ThreeColorProgram( const char* mode, const char* color1, const char* color2
         }
 
         // Add "swirl" function, with speed varying, then reverse direction
-        swirl3( getRealColor( color1 ), getRealColor( color2 ), getRealColor( color3 ), 2, 1000, 16000, 2000 );
+        swirl3( getRealColor( color1 ), getRealColor( color2 ), getRealColor( color3 ), 1, 500, 10000, 500 );
         
         //unsigned long testvalue = millis() % 500;
         //String temp = String(testvalue);
