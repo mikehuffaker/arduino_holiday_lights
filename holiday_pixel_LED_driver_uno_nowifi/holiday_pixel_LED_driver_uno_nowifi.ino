@@ -67,12 +67,12 @@ const int LEDModeSaveAdr = 0;
 
 // timestamp for button push timer
 volatile unsigned long btnPrevTS = 0;
-unsigned long btnDelayMSec = 250;
+unsigned int btnDelayMSec = 250;
 
-unsigned long LCDMsgDelay = 750;
-unsigned long LCDMsgPrev = 0;
+unsigned int LCDMsgDelay = 750;
+unsigned int LCDMsgPrev = 0;
 
-unsigned long startUpMsgDelay = 7000;
+unsigned int startUpMsgDelay = 7000;
 
 volatile boolean breakLEDMode = false;
 
@@ -88,7 +88,7 @@ void setup()
     // If flag is set, then try to get last LED Mode value from EEPROM
     if ( LEDModeSave )
     {
-        int tmp = 0;
+        unsigned int tmp = 0;
         EEPROM.get( LEDModeSaveAdr, tmp );
         if ( tmp > 0 && tmp <= LEDModeMax )
             LEDMode = tmp;
@@ -114,6 +114,35 @@ void setup()
     //lcd.print( "Holiday Lights!" );
 }
 
+// Added this to replace the arduino delay function as it has some drawbacks because
+// it blocks interrupts.  If microseconds are used, it will be divided into 10K blocks
+// because past 16383 microseconds delay is not accurate. 10000 microseconds is 10
+// milliseconds.
+void delay( unsigned long milliseconds, unsigned long microseconds )
+{
+    // Uses milliseconds or microseconds, but not both
+    if ( milliseconds > 0 )
+    {    
+        unsigned long current_ts = millis();
+        while ( millis() <= current_ts + milliseconds )
+        {
+            ;
+        } 
+    }
+    else if ( microseconds > 0 )
+    {
+        unsigned long delay_count = microseconds / 10000;
+        unsigned int delay_remainder = microseconds % 10000;
+        
+        for ( int x = 0; x < delay_count; x++ )
+        {
+            delayMicroseconds( 10000 );
+        }
+       
+        delayMicroseconds( delay_remainder );
+    }      
+}
+
 boolean writeLCDMessage( boolean withDelay, const char* line1, const char* line2 )
 {
     // Delay a bit if the flag is passed in, to provide a quick transition delay
@@ -121,7 +150,7 @@ boolean writeLCDMessage( boolean withDelay, const char* line1, const char* line2
     // too quickly after a mode change for instance.
     if ( withDelay )
     {
-       delay( LCDMsgDelay );      
+       delay( LCDMsgDelay, 0 );      
     }
 
     lcd.clear();
@@ -147,7 +176,7 @@ boolean writeLCDColorMessage( boolean withDelay, const char* mode, const char* c
     // too quickly after a mode change for instance.
     if ( withDelay )
     {
-       delay( LCDMsgDelay );      
+       delay( LCDMsgDelay, 0 );      
     }
 
     char line2[20];
@@ -198,7 +227,7 @@ void colorWipe( uint32_t c, uint8_t wait, char oddEvenAll, char beginOrEnd )
             if ( !breakLEDMode )
             {
                 strip.show();
-                delay(wait);
+                delay( wait, 0 );
             }
         }
     }
@@ -222,7 +251,7 @@ void colorWipe( uint32_t c, uint8_t wait, char oddEvenAll, char beginOrEnd )
             if ( !breakLEDMode )
             {
                 strip.show();
-                delay(wait);
+                delay( wait, 0 );
             }
         }
     }
@@ -247,7 +276,7 @@ void colorSet2( uint32_t color1, uint32_t color2, int wait )
     if ( !breakLEDMode )
     {
         strip.show();
-        delay(wait);
+        delay( wait, 0 );
     }
 }
 
@@ -275,7 +304,7 @@ void colorSet3( uint32_t color1, uint32_t color2, uint32_t color3, int wait )
     if ( !breakLEDMode )
     {
         strip.show();
-        delay(wait);
+        delay( wait, 0 );
     }
 }
 
@@ -303,7 +332,7 @@ void colorSet3_2pixel( uint32_t color1, uint32_t color2, uint32_t color3, int wa
     if ( !breakLEDMode )
     {
         strip.show();
-        delay(wait);
+        delay( wait, 0 );
     }
 }
 
@@ -326,7 +355,7 @@ void colorChase2( uint32_t color1, uint32_t color2, int wait )
     if ( !breakLEDMode )
     {
         strip.show();
-        delay(wait);
+        delay( wait, 0 );
     }
     
     // start at beginning
@@ -343,7 +372,7 @@ void colorChase2( uint32_t color1, uint32_t color2, int wait )
         if ( !breakLEDMode )
         {
             strip.show();
-            delay(wait);
+            delay( wait, 0 );
         }
     }
     
@@ -361,14 +390,14 @@ void colorChase2( uint32_t color1, uint32_t color2, int wait )
         if ( !breakLEDMode )
         {
             strip.show();
-            delay(wait);
+            delay( wait, 0 );
         }
     }
 }
 
 // randomly set a LED to one of 2 colors down the strip for a twinkle
 // effect
-void twinkle2( uint32_t color1, uint32_t color2, int wait, int iterations )
+void twinkle2( uint32_t color1, uint32_t color2, unsigned int wait, unsigned int iterations )
 {
     int i;
     int c;
@@ -386,14 +415,14 @@ void twinkle2( uint32_t color1, uint32_t color2, int wait, int iterations )
         if ( !breakLEDMode )
         {
             strip.show();
-            delay(wait);
+            delay( wait, 0 );
         }
     }   
  }
 
 // randomly set a LED to one of 3 colors down the strip for a twinkle
 // effect
-void twinkle3( uint32_t color1, uint32_t color2, uint32_t color3, int wait, int iterations )
+void twinkle3( uint32_t color1, uint32_t color2, uint32_t color3, unsigned int wait, unsigned int iterations )
 {
     int i;
     int c;
@@ -404,22 +433,23 @@ void twinkle3( uint32_t color1, uint32_t color2, uint32_t color3, int wait, int 
         c = random(0,3);
 
         if ( c == 2 )
-            strip.setPixelColor(i, color3);
+            strip.setPixelColor( i, color3 );
         else if ( c == 1 )
-            strip.setPixelColor(i, color2);
+            strip.setPixelColor( i, color2 );
         else
-            strip.setPixelColor(i, color1);
+            strip.setPixelColor( i, color1 );
             
         if ( !breakLEDMode )
         {
             strip.show();
-            delay(wait);
+            delay( wait, 0 );
         }
     }   
  }
  
- // colors go down the strand in one direction and then reverse.
-void swirl3( uint32_t color1, uint32_t color2, uint32_t color3, int rotations, int wait_min, int wait_max, int wait_interval ) 
+ // colors go down the strand in one direction and then reverse. Note delay is in
+ // micro seconds, NOT milliseconds, so pass in wait_min, wait_max, interval to match.
+void swirl3( uint32_t color1, uint32_t color2, uint32_t color3, unsigned int rotations, unsigned int wait_min, unsigned int wait_max, unsigned int wait_interval ) 
 {
     // Determine about what 1/3 of the pixels in the strip is.
     int one_third_factor = strip.numPixels() / 3;
@@ -479,7 +509,7 @@ void swirl3( uint32_t color1, uint32_t color2, uint32_t color3, int rotations, i
             {
                 // Delay per parms passed in
                 strip.show();
-                delay( i );
+                delay( 0, i );
                 // Advance the colors down the strip - since index starts at 0, actually
                 // need to roll back to 0 if the position is 1 less than the LED count
    
@@ -770,7 +800,7 @@ void ThreeColorProgram( const char* mode, const char* color1, const char* color2
         }
 
         // Add "swirl" function, with speed varying, then reverse direction
-        swirl3( getRealColor( color1 ), getRealColor( color2 ), getRealColor( color3 ), 2, 2, 20, 2 );
+        swirl3( getRealColor( color1 ), getRealColor( color2 ), getRealColor( color3 ), 2, 1000, 16000, 2000 );
         
         //unsigned long testvalue = millis() % 500;
         //String temp = String(testvalue);
