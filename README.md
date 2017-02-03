@@ -36,8 +36,8 @@ Also note that although I am sharing this code as Open Source, please
 respect the BSD license terms, as stated in the LICENSE.txt file.
 
 ## Credits
-I would like to get credit to [Adafruit](www.adafruit.com) and Lady Ada for the WS2801 arduino library
+I would like to get credit to [Adafruit](https:www.adafruit.com) and Lady Ada for the WS2801 arduino library
 code that interfaces with the LED strands.  I also bought much of the electronics from Adafruit and
 used their excellent tutorials to get this project working.  I also used some electronics from
-[Sparkfun](www.sparkfun.com).
+[Sparkfun](https://www.sparkfun.com).
 
